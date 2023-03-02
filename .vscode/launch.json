@@ -1,0 +1,74 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    //program:可执行文件的绝对路径
+    //prelauchTask:
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "g++ - 编译运行",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/pcbrouter",
+            "args": ["-h"],
+            //"args": ["${workspaceFolder}/bin/bm1/bm2.unrouted.kicad_pcb"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build", 
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Debug pcbrouter",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/pcbrouter",
+            "args": ["${workspaceFolder}/bin/bm1/bm2.unrouted.kicad_pcb"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "", 
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "help pcbrouter",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/pcbrouter",
+            "args": ["-h"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "", 
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ]
+}
