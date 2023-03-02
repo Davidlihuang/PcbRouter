@@ -152,7 +152,7 @@ void MultipinRoute::featuresToGridPaths() {
 
     // std::cout << "End of " << __FUNCTION__ << "()" << std::endl;
 }
-
+///<< pin对的距离最小的，由小到大排列
 void MultipinRoute::setupGridPinsRoutingOrder() {
     if (this->mGridPins.empty()) {
         return;

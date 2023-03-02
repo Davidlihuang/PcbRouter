@@ -2114,7 +2114,7 @@ void BoardGrid::addPinShapeObstacleCostToGrid(const GridPin &gridPin, const floa
             if (!this->validate_location(gridPt)) {
                 // std::cout << "\tWarning: Out of bound, pin cost at " << gridPt << std::endl;
                 continue;
-            }
+            }  
             //std::cout << "\tAdd pin cost at " << gridPt << std::endl;
             if (toBaseCost) {
                 this->base_cost_add(value, gridPt);

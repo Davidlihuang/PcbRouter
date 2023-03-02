@@ -10,6 +10,24 @@
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         std::cout << "Please provide input testcase filename." << std::endl;
+        std::cout << "pcbrouter \"-h\" for help!" << std::endl;
+        return 0;
+    }
+    
+    std::string par(argv[1]);
+    if( par == "-h")
+    {
+        std::cout << "pcbRouter [filename] [gridScal] [iterationNum] [enlargeBoundary] [layerChagedWeight]"
+                    " [trackObstacleWeight] [trackObstacleStepSize] [ViaObstacleStepSize] [padObstacleWeight]\n" << std::endl;
+        std::cout << "\t1. kicad_pcb: [fileName]\n" << std::endl;
+        std::cout << "\t2. girdScale: [int]\n" << std::endl;
+        std::cout << "\t3. iterations_num: [int]\n" << std::endl;
+        std::cout << "\t4. enlarge_boundary: [int]\n" << std::endl;
+        std::cout << "\t5. layer_change_weight: [double]\n" << std::endl;
+        std::cout << "\t6. track_obstacle_weight: [double]\n" << std::endl;
+        std::cout << "\t7. track_obstacle_step_size: [double]\n" << std::endl;
+        std::cout << "\t8. via_obstacle_step_size: [double]\n" << std::endl;
+        std::cout << "\t9. pad_obstacle_weight: [double]\n" << std::endl;
         return 0;
     }
 
@@ -57,6 +75,7 @@ int main(int argc, char *argv[]) {
     db.removeRoutedSegmentsAndVias();
 
     std::cout << "Starting router..." << std::endl;
+
     srand(GlobalParam::gSeed);
     GridBasedRouter router(db);
 

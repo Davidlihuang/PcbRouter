@@ -393,6 +393,10 @@ void GridBasedRouter::setupGridDiffPairNetclass(const int netclassId1, const int
     // mBg.addGridDiffPairNetclass(gridDiffPairNetclass);
 }
 
+/**
+ * @brief 利用布线规则，对net映射到布线图中
+ * 
+ */
 void GridBasedRouter::setupGridNetclass() {
     for (auto &netclassIte : mDb.getNetclasses()) {
         int id = netclassIte.getId();
@@ -405,6 +409,7 @@ void GridBasedRouter::setupGridNetclass() {
 
         GridNetclass gridNetclass{id, clearance, traceWidth, viaDia, viaDrill, microViaDia, microViaDrill};
 
+///< 计算trace with, via dia, diagonal trace width的半宽
         // Setup derived values
         gridNetclass.setHalfTraceWidth((int)floor((double)traceWidth / 2.0));
         gridNetclass.setHalfViaDia((int)floor((double)viaDia / 2.0));
@@ -412,14 +417,14 @@ void GridBasedRouter::setupGridNetclass() {
 
         // Diagnoal cases
         int diagonalTraceWidth = (int)ceil(dbLengthToGridLength(netclassIte.getTraceWidth()) / sqrt(2));
-        gridNetclass.setDiagonalTraceWidth(diagonalTraceWidth);
+        gridNetclass.setDiagonalTraceWidth(diagonalTraceWidth); //对角trace的宽度
         gridNetclass.setHalfDiagonalTraceWidth((int)floor((double)diagonalTraceWidth / 2.0));
         int diagonalClearance = (int)ceil(dbLengthToGridLength(netclassIte.getClearance()) / sqrt(2));
         gridNetclass.setDiagonalClearance(diagonalClearance);
 
+///< via， trace, diagonalTrace在gird上的展开值
         // !!! Move below expanding functions to a new function, to handle multiple netclasses
-
-        // Setup expansion values (for obstacles on the grids)
+        // Setup expansion values (for obstacles on the grids)， 线，和孔设置为障碍时，考虑约束范围内的grid需要设置为障碍
         gridNetclass.setViaExpansion(gridNetclass.getHalfViaDia());
         gridNetclass.setTraceExpansion(gridNetclass.getHalfTraceWidth());
         gridNetclass.setDiagonalTraceExpansion(gridNetclass.getHalfDiagonalTraceWidth());
@@ -432,7 +437,8 @@ void GridBasedRouter::setupGridNetclass() {
         if (GlobalParam::gUseMircoVia) {
             gridNetclass.setViaExpansion(gridNetclass.getHalfMicroViaDia());
         }
-
+///< Trace处理， Trace-end shape映射， search grid‘s映射        
+        ///< 线末端扩展圆形在当前model grid中进行栅格化，并保存这个图形
         // Update Trace-end shape grids
         double traceWidthFloating = dbLengthToGridLength(netclassIte.getTraceWidth());
         int halfTraceWidth = gridNetclass.getHalfTraceWidth();
@@ -442,21 +448,27 @@ void GridBasedRouter::setupGridNetclass() {
         // int halfViaDia = gridNetclass.getViaExpansion();
         // double halfViaDiaFloating = viaDiaFloating / 2.0 + dbLengthToGridLength(netclassIte.getClearance());
 
-        // Calculate the trace-end shape grids
+
+        
+        // Calculate the trace-end shape grids。 
         std::vector<Point_2D<int>> traceEndGrids;
-        getRasterizedCircle(halfTraceWidth, halfTraceWidthFloating, traceEndGrids);
-        gridNetclass.setTraceEndShapeGrids(traceEndGrids);
+        getRasterizedCircle(halfTraceWidth, halfTraceWidthFloating, traceEndGrids); 
+        gridNetclass.setTraceEndShapeGrids(traceEndGrids); 
+
 
         // Update trace searching grids
+        ///< 线宽+间距为半径的区域grid，作为trace的搜索区域
         std::vector<Point_2D<int>> traceSearchingGrids;
-        int traceSearchRadius = gridNetclass.getHalfTraceWidth() + gridNetclass.getClearance();
-        double traceSearchRadiusFloating = dbLengthToGridLength(netclassIte.getTraceWidth()) / 2.0 + dbLengthToGridLength(netclassIte.getClearance());
-        std::cout << "traceSearchRadius: " << traceSearchRadius << ", traceSearchRadiusFloating: " << traceSearchRadiusFloating << std::endl;
+        int traceSearchRadius = gridNetclass.getHalfTraceWidth() + gridNetclass.getClearance(); // 线宽+ 间距
+        double traceSearchRadiusFloating = 
+                dbLengthToGridLength(netclassIte.getTraceWidth()) / 2.0 + dbLengthToGridLength(netclassIte.getClearance());
+        std::cout << "traceSearchRadius: " << traceSearchRadius 
+                  << ", traceSearchRadiusFloating: " << traceSearchRadiusFloating << std::endl;
         // Expanded cases
         // int traceSearchRadius = gridNetclass.getHalfTraceWidth();
         // double traceSearchRadiusFloating = dbLengthToGridLength(netclassIte.getTraceWidth()) / 2.0;
 
-        // Calculate the trace searching grid
+        // Calculate the trace searching grid，
         getRasterizedCircle(traceSearchRadius, traceSearchRadiusFloating, traceSearchingGrids);
         gridNetclass.setTraceSearchingSpaceToGrids(traceSearchingGrids);
         // Debugging
@@ -465,7 +477,9 @@ void GridBasedRouter::setupGridNetclass() {
             std::cout << pt << std::endl;
         }
 
+///< Via处理， shape映射， search grid‘s映射
         // Update Via shape grids
+        // 获得via shape在board grid中的映射。栅格化，via shape
         double viaDiaFloating = dbLengthToGridLength(netclassIte.getViaDia());
         int halfViaDia = (int)floor((double)viaDia / 2.0);
         double halfViaDiaFloating = viaDiaFloating / 2.0;
@@ -483,7 +497,8 @@ void GridBasedRouter::setupGridNetclass() {
         getRasterizedCircle(halfViaDia, halfViaDiaFloating, viaGrids);
         gridNetclass.setViaShapeGrids(viaGrids);
 
-        // Update via searching grids
+        ///< via半径+间距为总半径区域grid，作为trace的区域
+        // Update via searching grids        
         std::vector<Point_2D<int>> viaSearchingGrids;
         int viaSearchRadius = gridNetclass.getHalfViaDia() + gridNetclass.getClearance();
         double viaSearchRadiusFloating = halfViaDiaFloating + dbLengthToGridLength(netclassIte.getClearance());
@@ -495,6 +510,7 @@ void GridBasedRouter::setupGridNetclass() {
             viaSearchRadiusFloating = halfViaDiaFloating + dbLengthToGridLength(netclassIte.getClearance());
         }
 
+        // via的大小必须小于trace size
         // Watch out the case of via size < trace size
         // std::cout << "viaSearchRadius: " << viaSearchRadius << ", viaSearchRadiusFloating: " << viaSearchRadiusFloating << std::endl;
         // std::cout << "traceSearchRadius: " << traceSearchRadius << ", traceSearchRadiusFloating: " << traceSearchRadiusFloating << std::endl;
@@ -513,7 +529,7 @@ void GridBasedRouter::setupGridNetclass() {
                 std::cout << pt << std::endl;
             }
         }
-
+///< 设置增量搜索网格: trace, via
         // Setup incremental searching grids
         gridNetclass.setupTraceIncrementalSearchGrids();
         gridNetclass.setupViaIncrementalSearchGrids();
@@ -538,26 +554,38 @@ void GridBasedRouter::setupGridNetclass() {
     }
 }
 
+/**
+ * @brief 设置布线网格： w * h * l
+ * 1. 关键参数：inputScale, enlargeBoundary
+ */
 void GridBasedRouter::setupBoardGrid() {
     std::cout << "\n\n######Start of " << __FUNCTION__ << "()" << std::endl;
     // Get board dimension
     //mDb.getBoardBoundaryByPinLocation(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
+    ///< 获取pcb制作板的大小
     mDb.getBoardBoundaryByEdgeCuts(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
     std::cout << "Routing Outline: (" << this->mMinX << ", " << this->mMinY << "), (" << this->mMaxX << ", " << this->mMaxY << ")" << std::endl;
     std::cout << "GlobalParam::inputScale: " << GlobalParam::inputScale << ", GlobalParam::enlargeBoundary: " << GlobalParam::enlargeBoundary << ", GlobalParam::gridFactor: " << GlobalParam::gridFactor << std::endl;
 
-    // Get grid dimension
+    // Get grid dimension， pcb板子有等比放大
     const unsigned int h = int(std::abs(mMaxY * GlobalParam::inputScale - mMinY * GlobalParam::inputScale)) + GlobalParam::enlargeBoundary;
     const unsigned int w = int(std::abs(mMaxX * GlobalParam::inputScale - mMinX * GlobalParam::inputScale)) + GlobalParam::enlargeBoundary;
     const unsigned int l = mDb.getNumCopperLayers();
     std::cout << "BoardGrid Size: w:" << w << ", h:" << h << ", l:" << l << std::endl;
 
-    // Initialize board grid
+    // Initialize board grid, 构建网格，初始化base_cost为0
     mBg.initilization(w, h, l);
 
     std::cout << "######End of " << __FUNCTION__ << "()\n\n";
 }
 
+/**
+ * @brief 将圆栅格化，用grid近似一个圆。
+ * 
+ * @param radius  取整后的半径
+ * @param radiusFloating  物理设计半径
+ * @param grids   输出表示圆的二维网格坐标， 中心(0,0)
+ */
 void GridBasedRouter::getRasterizedCircle(const int radius, const double radiusFloating, std::vector<Point_2D<int>> &grids) {
     // Center grid
     grids.push_back(Point_2D<int>{0, 0});
@@ -570,6 +598,16 @@ void GridBasedRouter::getRasterizedCircle(const int radius, const double radiusF
             if (x == 0 && y == 0) continue;
 
             // Check if any corner of grid is within the halfViaDiaFloating
+            // 这里（x, y） 是网格中心， 网格大小是1，所以0.5是网格的半宽
+            //         T
+            // (UL)*---*---*(UR)
+            //     |   |   |
+            // (L) *---*---*(R)
+            //     |   |   |
+            // (LL)*---*---*(LR)
+            //         B
+            //  网格中心四周的8个点到圆心的距离都小于圆的半径，就可以作为圆的栅格
+            
             Point_2D<double> LL{(double)x - 0.5, (double)y - 0.5};
             Point_2D<double> LR{(double)x + 0.5, (double)y - 0.5};
             Point_2D<double> UL{(double)x - 0.5, (double)y + 0.5};
@@ -594,6 +632,17 @@ void GridBasedRouter::getRasterizedCircle(const int radius, const double radiusF
     }
 }
 
+/**
+ * @brief 该函数是 GridBasedRouter 类的成员函数，用于设置网格网络和网格引脚。
+ * 函数中首先遍历所有的 nets，对于每一个 net，获取该 net 的一些信息，并将其加入到 mGridNets 中，
+ * 该变量存储了 MultipinRoute 对象，表示一个带有多个引脚的路由路径。然后遍历该 net 的所有引脚，
+ * 获取引脚所在的组件和实例，以及引脚的 padstack 信息，然后依次调用 setupGridPin 
+ * 函数、setupGridPinPolygonAndExpandedPolygon 函数和 setupGridPinContractedBox 
+ * 函数设置网格引脚的多边形、扩展多边形和收缩框。最后对于每个网格网络，设置网格引脚的路由顺序。
+ * 接下来遍历所有的实例，对于每个实例，获取其所对应的组件，并遍历该组件的所有 padstack，为每个
+ * padstack 创建一个网格引脚，并调用 setupGridPin 函数设置该网格引脚的参数。最后输出函数执行结束的信息。
+ * 
+ */
 void GridBasedRouter::setupGridNetsAndGridPins() {
     if (GlobalParam::gVerboseLevel <= VerboseLevel::DEBUG) {
         std::cout << "Starting " << __FUNCTION__ << "()..." << std::endl;
@@ -625,7 +674,7 @@ void GridBasedRouter::setupGridNetsAndGridPins() {
 
         for (auto &pin : pins) {
             // TODO: Id Range Checking?
-            // DB elements
+            // DB elementsgridPin
             auto &comp = mDb.getComponent(pin.getCompId());
             auto &inst = mDb.getInstance(pin.getInstId());
             auto &pad = comp.getPadstack(pin.getPadstackId());
@@ -845,7 +894,7 @@ void GridBasedRouter::setupGridPin(const padstack &pad, const instance &inst, co
 
     // Setup GridPin's LL,UR boundary
     double width = 0, height = 0;
-    mDb.getPadstackRotatedWidthAndHeight(inst, pad, width, height);
+    mDb.getPadstackRotatedWidthAndHeight(inst, pad, width, height);//只能90度旋转
     Point_2D<double> pinDbUR{pinDbLocation.m_x + width / 2.0, pinDbLocation.m_y + height / 2.0};
     Point_2D<double> pinDbLL{pinDbLocation.m_x - width / 2.0, pinDbLocation.m_y - height / 2.0};
     Point_2D<int> pinGridLL, pinGridUR;
@@ -862,6 +911,7 @@ void GridBasedRouter::setupGridPin(const padstack &pad, const instance &inst, co
         std::cout << "PinGridLL: " << pinGridLL << ", PinGridUR: " << pinGridUR << std::endl;
 
     // Handle pad shape polygon to derive pinShapeToGrids
+    //扩展大小shape的grid集合
     double dbExpansion = gridLengthToDbLength((double)gridExpansion);
     Point_2D<double> expandedPadSize = pad.getSize();
     expandedPadSize.m_x += (2.0 * dbExpansion);
@@ -873,10 +923,11 @@ void GridBasedRouter::setupGridPin(const padstack &pad, const instance &inst, co
     // 1. Make Boost polygon of pad shape
     polygon_t padShapePoly;
     for (const auto &pt : expandedPadPoly) {
-        bg::append(padShapePoly.outer(), point(pt.x() + pinDbLocation.x(), pt.y() + pinDbLocation.y()));
+        bg::append(padShapePoly.outer(), point(pt.x() + pinDbLocation.x(), pt.y() + pinDbLocation.y())); // + 图元点集合，加上偏移量表示在pcb board中的位置
     }
     // printPolygon(padShapePoly);
 
+    //boundary box和pin shape重叠的部分映射到pcbBoard的grid中
     for (int x = pinGridLL.m_x; x <= pinGridUR.m_x; ++x) {
         for (int y = pinGridLL.m_y; y <= pinGridUR.m_y; ++y) {
             // 2. Make fake grid box as Boost polygon
@@ -979,13 +1030,17 @@ void GridBasedRouter::set_diff_pair_net_id(const int _netId1, const int _netId2)
         std::cout << "GridDiffPairNetId: " << gDpNet.getNetId() << ", GridDiffPairNetclassId: " << gDpNet.getGridNetclassId() << std::endl;
     }
 }
-
+/**
+ * @brief 布线器初始化
+ * 1. gird layer和 database layer映射
+ * 2. 设置GridNetclass类，计算trace, via的search grid以及trace-end shape, via shape的在grid上的栅格化
+ */
 void GridBasedRouter::initialization() {
     // Initilization
-    this->setupLayerMapping();
-    this->setupGridNetclass();
-    this->setupBoardGrid();
-    this->setupGridNetsAndGridPins();
+    this->setupLayerMapping(); //层映射
+    this->setupGridNetclass();  // trace, via shape Grids to board
+    this->setupBoardGrid();      // construct Board Routing Grids
+    this->setupGridNetsAndGridPins(); // pin/pad shape to boardGrids
 }
 
 void GridBasedRouter::route_diff_pairs() {
